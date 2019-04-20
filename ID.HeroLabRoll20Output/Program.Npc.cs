@@ -260,7 +260,7 @@ namespace ID.HeroLabRoll20Output
 
         private static void WriteNpcMeleeWeapon(StreamWriter fileWriter, string type, HeroLabCharacter character, Weapon melee)
         {
-            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add -addtype npcatk-{type}");
+            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add --addtype npcatk-{type}");
             fileWriter.Write($" --set atkname {melee.Name}");
             if (melee.Attack.Contains("/"))
             {
