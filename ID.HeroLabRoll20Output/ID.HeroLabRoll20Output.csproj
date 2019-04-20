@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{25111FBF-310B-4692-A998-A4F76067655E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ID.HeroLabRoll20Output</RootNamespace>
+    <AssemblyName>ID.HeroLabRoll20Output</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>ID.HeroLabRoll20Output.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CsvHelper, Version=12.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
+      <HintPath>..\packages\CsvHelper.12.1.2\lib\net45\CsvHelper.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="HeroLab\Base\HeroLabSpecialArray.cs" />
+    <Compile Include="HeroLab\Character\Armors.cs" />
+    <Compile Include="HeroLab\Character\Factions.cs" />
+    <Compile Include="HeroLab\Character\Feats.cs" />
+    <Compile Include="HeroLab\Character\PathfinderItems.cs" />
+    <Compile Include="HeroLab\Character\Journals.cs" />
+    <Compile Include="HeroLab\Character\Languages.cs" />
+    <Compile Include="HeroLab\Character\PathfinderAttributes.cs" />
+    <Compile Include="HeroLab\Character\Penalties.cs" />
+    <Compile Include="HeroLab\Character\RaceSubTypes.cs" />
+    <Compile Include="HeroLab\Character\RaceType.cs" />
+    <Compile Include="HeroLab\Character\RaceTypes.cs" />
+    <Compile Include="HeroLab\Character\Skills.cs" />
+    <Compile Include="HeroLab\Character\SpellClasses.cs" />
+    <Compile Include="HeroLab\Character\Spells.cs" />
+    <Compile Include="HeroLab\Character\TrackedResources.cs" />
+    <Compile Include="HeroLab\Character\Weapons.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="HeroLab\Base\HeroLabDocument.cs" />
+    <Compile Include="HeroLab\Base\HeroLabLocalization.cs" />
+    <Compile Include="HeroLab\Base\HeroLabProgram.cs" />
+    <Compile Include="HeroLab\Base\HeroLabPublic.cs" />
+    <Compile Include="HeroLab\Base\HeroLabSpecial.cs" />
+    <Compile Include="HeroLab\Base\HeroLabTextValue.cs" />
+    <Compile Include="HeroLab\Base\HeroLabVersion.cs" />
+    <Compile Include="HeroLab\Base\HeroLabNamedProperty.cs" />
+    <Compile Include="HeroLab\Character\Armor.cs" />
+    <Compile Include="HeroLab\Character\ArmorClass.cs" />
+    <Compile Include="HeroLab\Character\Attack.cs" />
+    <Compile Include="HeroLab\Character\AttributeProperty.cs" />
+    <Compile Include="HeroLab\Character\Encumbrance.cs" />
+    <Compile Include="HeroLab\Character\Experience.cs" />
+    <Compile Include="HeroLab\Character\Faction.cs" />
+    <Compile Include="HeroLab\Character\FavoredClasses.cs" />
+    <Compile Include="HeroLab\Character\Feat.cs" />
+    <Compile Include="HeroLab\Character\Flaws.cs" />
+    <Compile Include="HeroLab\Character\Health.cs" />
+    <Compile Include="HeroLab\Character\HeroLabCharacter.cs" />
+    <Compile Include="HeroLab\Character\HeroPoints.cs" />
+    <Compile Include="HeroLab\Character\Initiative.cs" />
+    <Compile Include="HeroLab\Character\Item.cs" />
+    <Compile Include="HeroLab\Character\Journal.cs" />
+    <Compile Include="HeroLab\Character\Language.cs" />
+    <Compile Include="HeroLab\Character\Maneuvers.cs" />
+    <Compile Include="HeroLab\Character\ManeuverType.cs" />
+    <Compile Include="HeroLab\Character\Money.cs" />
+    <Compile Include="HeroLab\Character\Movement.cs" />
+    <Compile Include="HeroLab\Character\PathfinderAttribute.cs" />
+    <Compile Include="HeroLab\Character\PathfinderClass.cs" />
+    <Compile Include="HeroLab\Character\PathfinderClasses.cs" />
+    <Compile Include="HeroLab\Character\Penalty.cs" />
+    <Compile Include="HeroLab\Character\Personal.cs" />
+    <Compile Include="HeroLab\Character\Race.cs" />
+    <Compile Include="HeroLab\Character\RangedAttack.cs" />
+    <Compile Include="HeroLab\Character\Save.cs" />
+    <Compile Include="HeroLab\Character\Saves.cs" />
+    <Compile Include="HeroLab\Character\SituationalModifier.cs" />
+    <Compile Include="HeroLab\Character\SituationalModifiers.cs" />
+    <Compile Include="HeroLab\Character\Size.cs" />
+    <Compile Include="HeroLab\Character\Skill.cs" />
+    <Compile Include="HeroLab\Character\Spell.cs" />
+    <Compile Include="HeroLab\Character\SpellClass.cs" />
+    <Compile Include="HeroLab\Character\SpellLevel.cs" />
+    <Compile Include="HeroLab\Character\Templates.cs" />
+    <Compile Include="HeroLab\Character\TrackedResource.cs" />
+    <Compile Include="HeroLab\Character\Weapon.cs" />
+    <Compile Include="Program.Npc.cs" />
+    <Compile Include="Program.Npc.SpellLike.cs" />
+    <Compile Include="Program.Npc.Spells.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Spells\SpellDatabase.cs" />
+    <Compile Include="Spells\SpellSource.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="spelldb.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
