@@ -73,7 +73,7 @@ namespace ID.HeroLabRoll20Output.HeroLab.Character
         [XmlElement("description")]
         public string Description { get; set; }
 
-        [XmlElement("castsleft")]
+        [XmlAttribute("castsleft")]
         public string CastsLeft { get; set; }
 
         [XmlElement("spellcomp", typeof(string))]

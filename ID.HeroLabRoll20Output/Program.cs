@@ -86,6 +86,12 @@ namespace ID.HeroLabRoll20Output
             return int.Parse(val);
         }
 
+        private static string PreventRollingString(string unformatted)
+        {
+            //return unformatted;
+            return unformatted.Replace("{", "&#123;").Replace("}", "&#125;").Replace("[", "&#91;").Replace("]", "&#93;");
+        }
+
         private static string GetAlignment(string alignmentName)
         {
             switch (alignmentName)

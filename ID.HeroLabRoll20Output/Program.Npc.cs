@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using ID.HeroLabRoll20Output.HeroLab.Base;
 using ID.HeroLabRoll20Output.HeroLab.Character;
@@ -13,64 +14,93 @@ namespace ID.HeroLabRoll20Output
     {
         private static void ProcessNpcCharacter(HeroLabCharacter character)
         {
+            var items = new List<string>();
+            var mainCharacter = new StringBuilder("!HeroLabImporter --mode clear --set npc 1 --set options-flag-npc 0");
+            mainCharacter.Append($" --name {character.Name}");
 
-            using (var file = File.OpenWrite($"C:\\PathfinderExporter\\{character.Name}_NPC.txt"))
-            using (var fileWriter = new StreamWriter(file))
+            WriteNpcMain(mainCharacter, character);
+            WriteNpcDefense(mainCharacter, character);
+            WriteNpcOffense(mainCharacter, character);
+            WriteNpcStatistics(mainCharacter, character);
+            items.Add(mainCharacter.ToString());
+
+            //Melee Weapons
+            if (character.Melee?.Items?.Any() == true)
+                foreach (var melee in character.Melee.Items)
+                {
+                    var item = WriteNpcWeapon("melee", character, melee);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            //Ranged Weapons
+            if (character.Ranged?.Items?.Any() == true)
+                foreach (var ranged in character.Ranged.Items)
+                {
+                    var item = WriteNpcWeapon("ranged", character, ranged);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+
+                }
+
+            //Special Attacks
+            if (character.Attack?.Items?.Any() == true)
+                foreach (var sa in character.Attack.Items)
+                {
+                    var item = WriteNpcSpecialAttack(character, sa);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            //Spell-Like Abilities
+            if (character.SpellLikeAbilities?.Items?.Any() == true)
+                foreach (var spellLikeAbility in character.SpellLikeAbilities.Items)
+                {
+                    var item = WriteNpcSpellLikeAbility(character, spellLikeAbility);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            //Spells
+            if (character.SpellsMemorized?.Items?.Any() == true)
+                foreach (var spell in character.SpellsMemorized.Items)
+                {
+                    var item = WriteNpcSpell(character, spell);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            //Feats
+            if (character.Feats?.Items?.Any() == true)
+                foreach (var feat in character.Feats.Items)
+                {
+                    var item = WriteFeat(character, feat);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            //Special Abilities
+            if (character.OtherSpecials?.Items?.Any() == true)
+                foreach (var specialAbilities in character.OtherSpecials.Items)
+                {
+                    var item = WriteSpecialAbility(character, specialAbilities);
+                    if (!string.IsNullOrEmpty(item)) items.Add(item);
+                }
+
+            using (var file = File.Open($"C:\\PathfinderExporter\\{character.Name}_NPC.txt", FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var fileWriter = new StreamWriter(file) { AutoFlush = true })
             {
-                fileWriter.Write("!HeroLabImporter --mode clear --set npc 1");
-                fileWriter.Write($" --name {character.Name}");
-
-                WriteNpcMain(fileWriter, character);
-                WriteNpcDefense(fileWriter, character);
-                WriteNpcOffense(fileWriter, character);
-                WriteNpcStatistics(fileWriter, character);
-                fileWriter.WriteLine();
-
-                //Melee Weapons
-                if (character.Melee?.Items?.Any() == true)
-                    foreach (var melee in character.Melee.Items)
-                        WriteNpcMeleeWeapon(fileWriter, "melee", character, melee);
-
-                //Ranged Weapons
-                if (character.Ranged?.Items?.Any() == true)
-                    foreach (var ranged in character.Ranged.Items)
-                        WriteNpcMeleeWeapon(fileWriter, "ranged", character, ranged);
-
-                //Special Attacks
-                if (character.Attack?.Items?.Any() == true)
-                    foreach (var sa in character.Attack.Items)
-                        WriteNpcSpecialAttack(fileWriter, character, sa);
-
-                //Spell-Like Abilities
-                if (character.SpellLikeAbilities?.Items?.Any() == true)
-                    foreach (var spellLikeAbility in character.SpellLikeAbilities.Items)
-                        WriteNpcSpellLikeAbility(fileWriter, character, spellLikeAbility);
-
-                //Spells
-                if (character.SpellsMemorized?.Items?.Any() == true)
-                    foreach (var spell in character.SpellsMemorized.Items)
-                        WriteNpcSpell(fileWriter, character, spell);
-
-                //Feats
-                if (character.Feats?.Items?.Any() == true)
-                    foreach (var feat in character.Feats.Items)
-                        WriteFeat(fileWriter, character, feat);
-
-                //Special Abilities
-                if (character.OtherSpecials?.Items?.Any() == true)
-                    foreach (var specialAbilities in character.OtherSpecials.Items)
-                        WriteSpecialAbility(fileWriter, character, specialAbilities);
+                foreach (var line in items)
+                    if (line == items.Last())
+                        fileWriter.Write(line);
+                    else
+                        fileWriter.WriteLine(line);
             }
         }
 
-        private static void WriteSpecialAbility(StreamWriter fileWriter, HeroLabCharacter character, HeroLabSpecial specialAbilities)
+        private static string WriteSpecialAbility(HeroLabCharacter character, HeroLabSpecial specialAbilities)
         {
-            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add --addtype abilities");
-            fileWriter.Write($" --set name {specialAbilities.Name}");
-            fileWriter.Write($" --set type {GetSpecialAbilityType(specialAbilities.Type)}");
-            fileWriter.Write($" --set descflag 1");
-            fileWriter.Write($" --set description {specialAbilities.Description.Replace('\r', ' ').Replace('\n', ' ')}");
-            fileWriter.WriteLine();
+            var stringBuilder = new StringBuilder($"!HeroLabImporter --name {character.Name} --mode add --addtype abilities");
+            stringBuilder.Append($" --set name {specialAbilities.Name}");
+            stringBuilder.Append($" --set type {GetSpecialAbilityType(specialAbilities.Type)}");
+            stringBuilder.Append($" --set descflag 1");
+            stringBuilder.Append($" --set options-flag 0");
+            stringBuilder.Append($" --set description {OneLineString(specialAbilities.Description.Replace('\r', ' ').Replace('\n', ' ').Trim())}");
+            return stringBuilder.ToString();
         }
 
         private static object GetSpecialAbilityType(string type)
@@ -84,12 +114,14 @@ namespace ID.HeroLabRoll20Output
             return type;
         }
 
-        private static void WriteFeat(StreamWriter fileWriter, HeroLabCharacter character, Feat feat)
+        private static string WriteFeat(HeroLabCharacter character, Feat feat)
         {
-            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add --addtype feats");
+
+            var stringBuilder = new StringBuilder($"!HeroLabImporter --name {character.Name} --mode add --addtype feats");
             
-            fileWriter.Write($" --set name {feat.Name}"); //name
-            fileWriter.Write($" --set type {(string.IsNullOrEmpty(feat.CategoryText) ? "general" : feat.CategoryText.ToLower())}"); //type
+            stringBuilder.Append($" --set name {feat.Name}"); //name
+            stringBuilder.Append($" --set type {(string.IsNullOrEmpty(feat.CategoryText) ? "general" : feat.CategoryText.ToLower())}"); //type
+            stringBuilder.Append($" --set options-flag 0");
 
             var description = feat.Description;
             var prerequisites = string.Empty;
@@ -124,25 +156,35 @@ namespace ID.HeroLabRoll20Output
                 description = description.Replace(special, "");
                 special = special.Split(':')[1];
             }
-            fileWriter.Write($" --set prerequisites {OneLineString(prerequisites)}"); //prerequisites
-            fileWriter.Write($" --set benefits {OneLineString(benefits)}"); //benefits
-            fileWriter.Write($" --set normal {OneLineString(normal)}"); //normal
-            fileWriter.Write($" --set special {OneLineString(special)}"); //special
-            fileWriter.Write(" --set descflag 1"); //descflag
-            fileWriter.Write($" --set description {OneLineString(description)}"); // description
-            fileWriter.WriteLine();
+            if (!string.IsNullOrEmpty(prerequisites.Trim()) && prerequisites.Length > 1)
+                stringBuilder.Append($" --set prerequisites {OneLineString(prerequisites)}"); //prerequisites
+            if (!string.IsNullOrEmpty(benefits.Trim()) && benefits.Length > 1)
+                stringBuilder.Append($" --set benefits {OneLineString(benefits)}"); //benefits
+            if (!string.IsNullOrEmpty(normal.Trim()) && normal.Length > 1)
+                stringBuilder.Append($" --set normal {OneLineString(normal)}"); //normal
+            if (!string.IsNullOrEmpty(special.Trim()) && special.Length > 1)
+                stringBuilder.Append($" --set special {OneLineString(special)}"); //special
+            if (!string.IsNullOrEmpty(description.Trim()) && description.Length > 1)
+            {
+                stringBuilder.Append(" --set descflag 1"); //descflag
+                stringBuilder.Append($" --set description {OneLineString(description)}"); // description
+            }
+            return stringBuilder.ToString();
         }
 
-        private static void WriteNpcSpecialAttack(StreamWriter fileWriter, HeroLabCharacter character, HeroLabSpecial special)
+        private static string WriteNpcSpecialAttack(HeroLabCharacter character, HeroLabSpecial special)
         {
-            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add --addtype npcatk-special");
-            fileWriter.Write($" --set atkname {special.ShortName}");
+            var stringBuilder = new StringBuilder($"!HeroLabImporter --name {character.Name} --mode add --addtype npcatk-special");
+            stringBuilder.Append($" --set atkname {special.ShortName}");
+            stringBuilder.Append($" --set atkdisplay {special.ShortName}");
+            stringBuilder.Append($" --set options-flag 0");
             var trackedResource = character.TrackedResources.Items.FirstOrDefault(tr => tr.Name == special.Name);
             if (trackedResource != null)
             {
-                fileWriter.Write($" --set perday_max {trackedResource.Max}");
+                stringBuilder.Append($" --set perday 0");
+                stringBuilder.Append($" --set perday!max {trackedResource.Max}");
             }
-            fileWriter.Write($" --set atkdesc {OneLineString(special.Description)}");
+            stringBuilder.Append($" --set atkdesc {OneLineString(special.Description)}");
             //First, we need to find the item that contains information on how this thing works.
             var checkers = Regex.Matches(special.Name, @"(?<=\().+?(?=\))");
             bool hasAttack = false;
@@ -153,6 +195,8 @@ namespace ID.HeroLabRoll20Output
             bool hasSavingThrowDc = false;
             bool hasDamage = false;
             bool hasDamage2 = false;
+            string saveDc = null;
+            string saveText = null;
             foreach (Match check in checkers)
             {
                 if (check.Value.Contains("DC") || check.Value.Contains("ft.") || check.Value.Contains("rounds") ||
@@ -163,8 +207,8 @@ namespace ID.HeroLabRoll20Output
                     {
                         if (item.ToLower().Contains("cone") && !hasRange)
                         {
-                            fileWriter.Write(" --set rangeflag 1");
-                            fileWriter.Write($" --set atkrange {item}");
+                            stringBuilder.Append(" --set rangeflag " + PreventRollingString("{{range=@{atkrange}}}"));
+                            stringBuilder.Append($" --set atkrange {item}");
                             hasRange = true;
                         }
                         else if (item.ToLower().Contains("dc") && !hasSavingThrowDc)
@@ -172,41 +216,64 @@ namespace ID.HeroLabRoll20Output
                             var dc = Regex.Match(item, @"\d+");
                             if (dc.Success)
                             {
-                                fileWriter.Write($" --set atkdc {dc.Value}");
+                                saveDc = dc.Value;
+                                stringBuilder.Append($" --set atkdc {dc.Value}");
                                 hasSavingThrowDc = true;
                                 if (hasSavingThrow)
                                 {
-                                    fileWriter.Write(" --set atksaveflag 1");
+                                    stringBuilder.Append(" --set atksaveflag " + PreventRollingString("{{save=1}}{{savedc=@{atkdc}}}{{saveeffect=@{atksave}}}"));
                                 }
                             }
-                            if ((item.ToLower().Contains("half") || item.ToLower().Contains("partial") ||
-                                 item.ToLower().Contains("negates")) && !hasSavingThrow)
+                            if (!hasSavingThrow)
                             {
-                                var fixedItem = Regex.Replace(item.ToLower(), @"DC \d+", "").Trim();
-                                hasSavingThrow = true;
-                                fileWriter.Write($" --set atksave {fixedItem}");
-                                if (hasSavingThrowDc)
+                                var desc = special.Description.ToLower();
+                                var modDesc = "";
+                                if (desc.Contains("half") || desc.Contains("halves"))
                                 {
-                                    fileWriter.Write(" --set atksaveflag 1");
+                                    modDesc = "half";
+                                }
+                                else if (desc.Contains("partial"))
+                                {
+                                    modDesc = "partial";
+                                }
+                                else if (desc.Contains("negate"))
+                                {
+                                    modDesc = "negates";
+                                }
+                                var checkDesc = "";
+                                if (desc.Contains("fortitude")) checkDesc = "Fortitude";
+                                if (desc.Contains("reflex")) checkDesc = "Reflex";
+                                if (desc.Contains("will")) checkDesc = "Will";
+                                if (!string.IsNullOrEmpty(modDesc) && !string.IsNullOrEmpty(checkDesc))
+                                {
+                                    stringBuilder.Append($" --set atksave {checkDesc} {modDesc}");
+                                    saveText = $"{checkDesc} {modDesc}";
+                                    hasSavingThrow = true;
+                                    if (hasSavingThrowDc)
+                                    {
+                                        stringBuilder.Append(" --set atksaveflag " + PreventRollingString("{{save=1}}{{savedc=@{atkdc}}}{{saveeffect=@{atksave}}}"));
+                                    }
                                 }
                             }
                         }
                         else if (item.ToLower().Contains("feet") && !hasRange)
                         {
-                            fileWriter.Write(" --set rangeflag 1");
-                            fileWriter.Write($" --set atkrange {item}");
+                            stringBuilder.Append(" --set rangeflag " + PreventRollingString("{{range=@{atkrange}}}"));
+                            stringBuilder.Append($" --set atkrange {item}");
                             hasRange = true;
                         }
                         else if ((item.ToLower().Contains("fire") || item.ToLower().Contains("sonic") ||
                                   item.ToLower().Contains("acid") || item.ToLower().Contains("cold") ||
                                   item.ToLower().Contains("sonic")) && !hasDamage)
                         {
-                            var possibleDamage = Regex.Match(item.ToLower(), @"\d+d\d+[+-]?\d+?");
+                            var possibleDamage = Regex.Match(item.ToLower(), @"\d+d\d+[+-]?\d*");
                             if (possibleDamage.Success)
                             {
-                                fileWriter.Write(" --set dmgflag 1");
-                                fileWriter.Write($" --set dmgbase {possibleDamage.Value}");
-                                fileWriter.Write(
+                                stringBuilder.Append(" --set dmgflag1 1");
+                                stringBuilder.Append(" --set dmgflag " + PreventRollingString("{{damage=1}}{{dmg1flag=1}}{{dmg1=[[@{dmgbase}[MOD]+@{rollmod_damage}[QUERY]]]}}{{dmg1type=@{dmgtype}}}{{dmg1crit=[[(@{dmgbase}[MOD]+@{rollmod_damage}[QUERY])*@{dmgcritmulti}]]}}"));
+                                //stringBuilder.Append(" --set dmgflag "+ PreventRollingString("{{damage=1}}{{dmg1flag=1}}{{dmg1=[[" + possibleDamage.Value + "]]}}{{dmg1type=" + item.ToLower().Replace(possibleDamage.Value, "").Trim() + "}}{{dmg1crit=[[(" + possibleDamage.Value + ")*2]]}}"));
+                                stringBuilder.Append($" --set dmgbase {possibleDamage.Value}");
+                                stringBuilder.Append(
                                     $" --set dmgtype {item.ToLower().Replace(possibleDamage.Value, "").Trim()}");
                                 hasDamage = true;
 
@@ -217,12 +284,13 @@ namespace ID.HeroLabRoll20Output
                                   item.ToLower().Contains("acid") || item.ToLower().Contains("cold") ||
                                   item.ToLower().Contains("sonic")) && !hasDamage2)
                         {
-                            var possibleDamage = Regex.Match(item.ToLower(), @"\d+d\d+[+-]?\d+?");
+                            var possibleDamage = Regex.Match(item.ToLower(), @"\d+d\d+[+-]?\d*");
                             if (possibleDamage.Success)
                             {
-                                fileWriter.Write(" --set dmgflag2 1");
-                                fileWriter.Write($" --set dmgbase2 {possibleDamage.Value}");
-                                fileWriter.Write(
+                                stringBuilder.Append(" --set dmgflag2 " + PreventRollingString("{{damage=1}}{{dmg2flag=1}}{{dmg2=[[@{dmg2base}[MOD]+@{rollmod_damage}[QUERY]]]}}{{dmg2type=@{dmg2type}}}{{dmg1crit=[[(@{dmg2base}[MOD]+@{rollmod_damage}[QUERY])*@{dmg2critmulti}]]}}"));
+                                //stringBuilder.Append(" --set dmgflag2 " + PreventRollingString("{{damage=1}}{{dmg2flag=1}}{{dmg2=[[" + possibleDamage.Value + "]]}}{{dmg2type=" + item.ToLower().Replace(possibleDamage.Value, "").Trim() + "}}{{dmg2crit=[[(" + possibleDamage.Value + ")]]}}"));
+                                stringBuilder.Append($" --set dmgbase2 {possibleDamage.Value}");
+                                stringBuilder.Append(
                                     $" --set dmgtype2 {item.ToLower().Replace(possibleDamage.Value, "").Trim()}");
                                 hasDamage2 = true;
                             }
@@ -230,65 +298,174 @@ namespace ID.HeroLabRoll20Output
                         else if ((item.ToLower().Contains("half") || item.ToLower().Contains("partial") ||
                                   item.ToLower().Contains("negates")) && !hasSavingThrow)
                         {
-                            var fixedItem = Regex.Replace(item.ToLower(), @"dc \d+", "").Trim();
+                            var fixedItem = Regex.Replace(item.ToLower(), @"dc \d*", "").Trim();
                             hasSavingThrow = true;
-                            fileWriter.Write($" --set atksave {fixedItem}");
+                            stringBuilder.Append($" --set atksave {fixedItem}");
+                            saveText = fixedItem;
                             if (hasSavingThrowDc)
                             {
-                                fileWriter.Write(" --set atksaveflag 1");
+                                stringBuilder.Append(" --set atksaveflag "+PreventRollingString("{{save=1}}{{savedc=@{atkdc}}}{{saveeffect=@{atksave}}}"));
                             }
                         }
                         else if (item.ToLower().Contains("every") && !hasEffect)
                         {
                             var finalItem = item.ToLower();
-                            var replacements = Regex.Matches(item.ToLower(), @"\d+d\d+[+-]?\d+?");
+                            var replacements = Regex.Matches(item.ToLower(), @"\d+d\d+[+-]?\d*");
                             foreach (Match match in replacements)
                             {
                                 finalItem = finalItem.Replace(match.Value, $"[[{match.Value}]]");
                             }
-                            fileWriter.Write($" --set atkeffect {finalItem}");
-                            fileWriter.Write(" --set effectflag 1");
+                            stringBuilder.Append($" --set atkeffect {finalItem}");
+                            stringBuilder.Append(" --set effectflag " + PreventRollingString("{{effect=@{atkeffect}}}"));
                             hasEffect = true;
                         }
                     }
                 }
             }
-            fileWriter.WriteLine();
+            stringBuilder.Append(" --set options-flag 0");
+            return stringBuilder.ToString();
         }
 
-        
-
-        private static void WriteNpcMeleeWeapon(StreamWriter fileWriter, string type, HeroLabCharacter character, Weapon melee)
+        private static string GetNpcWeaponMultipleAttackFlag(Weapon weapon)
         {
-            fileWriter.Write($"!HeroLabImporter --name {character.Name} --mode add --addtype npcatk-{type}");
-            fileWriter.Write($" --set atkname {melee.Name}");
+            //This is a little complicated, because we're trying to build out a roll template for the attack.
+            const string baseDamageKey = "#basedamage#"; // = Damage roll without crit. "1d4"
+            const string critDamageKey = "#critdamage#"; // = Damage roll with a crit. "2d4"
+            const string critMultiplierKey = "#critmultiplier#"; //#critmultiplier# = Multiplier integer "2"
+            const string bonusDamageKey = "#bonusdamage#"; // = Bonus damage roll without crit. "1d6"
+            const string bonusCritDamageKey = "#bonuscritdamage#"; // = Bonus crit damage roll with crit "2d6"
+            const string bonusCritDamageMultiplierKey = "#bonuscritdamagemultipler#"; // = Bonus damage multiplier integer "2"
+            const string rollNumberKey = "#rollnumber#"; // = Subsequent roll number integer.
+            const string rollNumberPlusKey = "#rollnumberplus#"; // = Subsequent roll number integer plus 1
+
+            //Base Roll:
+            const string baseRollTemplate = "{{roll=[[1d20cs>@{atkcritrange}+@{atkmod}[MOD]+@{rollmod_attack}[QUERY]]]}}{{critconfirm=[[1d20cs20+@{atkmod}[MOD]+@{rollmod_attack}[QUERY]]]}}{{rolldmg1=[[#basedamage# + @{rollmod_damage}[QUERY]]]}}{{rolldmg1type=@{dmgtype}}}{{rolldmg1crit=[[(#critdamage#) + (@{rollmod_damage}[QUERY]*#critmultiplier#)]]}}";
+            //Bonus Damage:
+            const string bonusDamageTemplate = "{{rolldmg2=[[#bonusdamage# + @{rollmod_damage}[QUERY]]]}} {{rolldmg2type=@{dmg2type}}}";
+            //Bonus Damage (if crittable):
+            const string bonusCritDamageTemplate = "{{rolldmg2crit=[[(#bonuscritdamage#) + (@{rollmod_damage}[QUERY]*#bonuscritdamagemultiplier#)]]}}";
+            //Subsequent Attacks (second attack, rollnumber is 1):
+            const string subsequentRollTemplate = "{{roll#rollnumber#=[[1d20cs>@{atkcritrange} + @{atkmod#rollnumberplus#}[MOD] + @{rollmod_attack}[QUERY]]]}} {{critconfirm#rollnumber#=[[1d20cs20 + @{atkmod#rollnumberplus#}[MOD] + @{rollmod_attack}[QUERY]]]}}{{roll#rollnumber#dmg1=[[#basedamage# + @{rollmod_damage}[QUERY]]]}} {{roll#rollnumber#dmg1type=@{dmgtype}}}{{roll#rollnumber#dmg1crit=[[(#critdamage#) + (@{rollmod_damage}[QUERY]2)]]}}";
+            //Bonus Damage on Subsequent Attacks:
+            const string subsequentBonusDamageTemplate = "{{roll#rollnumber#dmg2=[[#bonusdamage# + @{rollmod_damage}[QUERY]]]}} {{roll#rollnumber#dmg2type=@{dmg2type}}}";
+            //Bonus Damage on Subsequent Attacks (if crittable):
+            const string subsequentBonusCritDamageTemplate = "{{roll#rollnumber#dmg2crit=[[(#bonuscritdamage#) + (@{rollmod_damage}[QUERY]*#bonuscritdamagemultiplier#)]]}}";
+
+            //Now that we have the keys and the templates, let's start with what we're working with.
+            var weaponDamageRoll = "";
+            var critWeaponDamageRoll = "";
+            var critMultiplier = 2;
+            var bonusDamageRoll = "";
+            var bonusDamageMultiplier = 1; //This will always be 1 until I figure out a way to support if the bonus damage is crittable. This...usually doesn't happen.
+            var bonusCritDamage = "";
+            if (string.IsNullOrEmpty(weapon.Damage))
+            {
+                //No damage, no problem.
+                return "0";
+            }
+            else if (!weapon.Damage.Contains(" "))
+            {
+                //There's no separation for the weapon damage. Its just a straight-up damage dealer.
+                weaponDamageRoll = weapon.Damage;
+            }
+            else
+            {
+                //Its got a special thing. Make sure we remove the plus.
+                weaponDamageRoll = weapon.Damage.Split(' ')[0];
+                var plus = weapon.Damage.Split(new[] { " plus " }, StringSplitOptions.None)[1];
+                if (Regex.IsMatch(plus, @"\d+d\d+"))
+                {
+                    bonusDamageRoll = Regex.Match(plus, @"\d+d\d+").Value;
+                }
+            }
+            //Now, we figure out the crit multiplier
+            if (weapon.Crit.Contains("×")) //Its not x, its ×!
+            {
+                critMultiplier = int.Parse(Regex.Match(weapon.Crit, @"(?<=×)\d").Value);
+            }
+            for (int i = 0; i < critMultiplier; i++)
+            {
+                if (!string.IsNullOrEmpty(critWeaponDamageRoll)) critWeaponDamageRoll += " + ";
+                critWeaponDamageRoll += weaponDamageRoll;
+            }
+            for (int i = 0; i < bonusDamageMultiplier; i++)
+            {
+                if (!string.IsNullOrEmpty(bonusCritDamage)) bonusCritDamage += " + ";
+                bonusCritDamage += bonusDamageRoll;
+            }
+            var numberOfAttacks = weapon.Attack.Contains("/") ? weapon.Attack.Split('/').Length : 1;
+            //Alrighty, we got all of the information, now let's stitch it together.
+            //First, we start with the initial attack.
+            var attackTotal = baseRollTemplate.Replace(baseDamageKey, weaponDamageRoll).Replace(critDamageKey, critWeaponDamageRoll).Replace(critMultiplierKey, critMultiplier.ToString());
+            if (!string.IsNullOrEmpty(bonusDamageRoll))
+            {
+                attackTotal += bonusDamageTemplate.Replace(bonusDamageKey, bonusDamageRoll);
+            }
+            if (bonusDamageMultiplier > 1)
+            {
+                attackTotal += bonusCritDamageTemplate.Replace(bonusCritDamageKey, bonusCritDamage).Replace(bonusCritDamageMultiplierKey, bonusDamageMultiplier.ToString());
+            }
+            //Let's move on to subsequent attacks.
+            for (int attack = 1; attack < numberOfAttacks; attack++)
+            {
+                attackTotal += " ";
+                attackTotal += subsequentRollTemplate.Replace(rollNumberKey, attack.ToString()).Replace(rollNumberPlusKey, (attack + 1).ToString()).Replace(baseDamageKey, weaponDamageRoll).Replace(critDamageKey, critWeaponDamageRoll).Replace(critMultiplierKey, critMultiplier.ToString());
+                if (!string.IsNullOrEmpty(bonusDamageRoll))
+                {
+                    attackTotal += subsequentBonusDamageTemplate.Replace(rollNumberKey, attack.ToString()).Replace(rollNumberPlusKey, (attack + 1).ToString()).Replace(bonusDamageKey, bonusDamageRoll);
+                }
+                if (bonusDamageMultiplier > 1)
+                {
+                    attackTotal += subsequentBonusCritDamageTemplate.Replace(rollNumberKey, attack.ToString()).Replace(rollNumberPlusKey, (attack + 1).ToString()).Replace(bonusCritDamageKey, bonusCritDamage).Replace(bonusCritDamageMultiplierKey, bonusDamageMultiplier.ToString());
+                }
+            }
+            //aand now we're done with this monstrousity.
+            return PreventRollingString(attackTotal);
+        }
+
+
+        private static string WriteNpcWeapon(string type, HeroLabCharacter character, Weapon melee)
+        {
+            var stringBuilder = new StringBuilder($"!HeroLabImporter --name {character.Name} --mode add --addtype npcatk-{type} --set options-flag on");
+            stringBuilder.Append($" --set atkname {melee.Name}");
+            stringBuilder.Append($" --set multipleatk {GetNpcWeaponMultipleAttackFlag(melee)}");
+            var attackDisplay = melee.Name + " +";
             if (melee.Attack.Contains("/"))
             {
-                fileWriter.Write($" --set multipleatk_flag 1");
+                stringBuilder.Append($" --set multipleatk_flag 1");
                 var attackNumber = 1;
                 foreach (var attack in melee.Attack.Split('/'))
                 {
-                    fileWriter.Write(attackNumber == 1
-                        ? $" --set atkmod {attack}"
-                        : $" --set atkmod{attackNumber} {attack}");
+                    if (attackNumber == 1)
+                    {
+                        attackDisplay += GetValue(attack);
+                    } else
+                    {
+                        attackDisplay += $"/{GetValue(attack)}";
+                    }
+                    stringBuilder.Append(attackNumber == 1
+                        ? $" --set atkmod {GetValue(attack)}"
+                        : $" --set atkmod{attackNumber} {GetValue(attack)}");
                     attackNumber++;
                 }
             }
             else
             {
-                fileWriter.Write(" --set multipleatk_flag 0");
-                fileWriter.Write($" --set atkmod {melee.Attack}");
+                attackDisplay += GetValue(melee.Attack);
+                stringBuilder.Append($" --set atkmod {GetValue(melee.Attack)}");
             }
-            WriteNpcCrit(fileWriter, melee.Crit);
-            
+
+            var critReplace = melee.Crit?.Replace("×", "x").Replace("/x2","") ?? "";
             if (string.IsNullOrEmpty(melee.Damage))
             {
-                fileWriter.Write(" --set dmgflag 0");
+                stringBuilder.Append(" --set dmgflag 0");
             }
             else if (!melee.Damage.Contains(" "))
             {
-                fileWriter.Write(" --set dmgflag 1");
-                fileWriter.Write($" --set dmgbase {melee.Damage}");
+                stringBuilder.Append(" --set dmgflag 1");
+                stringBuilder.Append($" --set dmgbase {melee.Damage}");
+                stringBuilder.Append(WriteNpcCrit(melee.Crit));
+                attackDisplay += CritDisplay(melee.Damage, "", critReplace);
             }
             else
             {
@@ -298,127 +475,70 @@ namespace ID.HeroLabRoll20Output
                 {
                     var plusDamage = Regex.Match(plus, @"\d+d\d+").Value;
                     var plusExtra = plus.Replace(plusDamage, "").Trim();
-                    fileWriter.Write($" --set dmgbase {damage}");
-                    fileWriter.Write(" --set dmgflag 1");
-                    fileWriter.Write($" --set dmg2base {plusDamage}");
-                    fileWriter.Write($" --set dmg2type {plusExtra}");
-                    fileWriter.Write(" --set dmg2flag 1");
+                    stringBuilder.Append($" --set dmgbase {damage}");
+                    stringBuilder.Append(" --set dmgflag 1");
+                    stringBuilder.Append($" --set dmg2base {plusDamage}");
+                    stringBuilder.Append($" --set dmg2type {plusExtra}");
+                    stringBuilder.Append(" --set dmg2flag 1");
+                    attackDisplay += CritDisplay(damage, plusDamage, critReplace);
                 }
                 else
                 {
-                    fileWriter.Write(" --set dmgflag 1");
-                    fileWriter.Write($" --set dmgbase {damage}");
-                    fileWriter.Write($" --set dmgtype {plus}");
+                    stringBuilder.Append(" --set dmgflag 1");
+                    stringBuilder.Append($" --set dmgbase {damage}");
+                    stringBuilder.Append($" --set dmgtype {plus}");
+                    attackDisplay += CritDisplay(damage, plus, critReplace);
                 }
+                stringBuilder.Append(WriteNpcCrit(melee.Crit));
             }
+
+            stringBuilder.Append($" --set atkdisplay {attackDisplay}");
+            
+
             if (type == "ranged" && melee.RangedAttack != null)
             {
-                fileWriter.Write($" --set atkrange {melee.RangedAttack.RangeIncrementText}");
+                stringBuilder.Append($" --set atkrange {melee.RangedAttack.RangeIncrementText}");
             }
-            fileWriter.WriteLine();
+            stringBuilder.Append(" --set options-flag 0");
+            return stringBuilder.ToString();
         }
 
-        private static void WriteNpcCrit(StreamWriter fileWriter, string meleeCrit)
+        private static string CritDisplay(string damage, string plus, string crit)
         {
-            switch (meleeCrit)
-            {
-                case "15-20/x2":
-                    fileWriter.Write(" --set atkcritrange 15");
-                    fileWriter.Write(" --set dmgcritmulti 2");
-                    break;
-                case "17-20/x2":
-                    fileWriter.Write(" --set atkcritrange 17");
-                    fileWriter.Write(" --set dmgcritmulti 2");
-                    break;
-                case "18-20/x2":
-                    fileWriter.Write(" --set atkcritrange 18");
-                    fileWriter.Write(" --set dmgcritmulti 2");
-                    break;
-                case "19-20/x2":
-                    fileWriter.Write(" --set atkcritrange 19");
-                    fileWriter.Write(" --set dmgcritmulti 2");
-                    break;
-
-                case "":
-                    fileWriter.Write(" --set atkcritrange 20");
-                    fileWriter.Write(" --set dmgcritmulti 2");
-                    break;
-                case "x3":
-                    fileWriter.Write(" --set atkcritrange 20");
-                    fileWriter.Write(" --set dmgcritmulti 3");
-                    break;
-                case "x4":
-                    fileWriter.Write(" --set atkcritrange 20");
-                    fileWriter.Write(" --set dmgcritmulti 4");
-                    break;
-                case "x5":
-                    fileWriter.Write(" --set atkcritrange 20");
-                    fileWriter.Write(" --set dmgcritmulti 5");
-                    break;
-
-                case "15-20/x3":
-                    fileWriter.Write(" --set atkcritrange 15");
-                    fileWriter.Write(" --set dmgcritmulti 3");
-                    break;
-                case "17-20/x3":
-                    fileWriter.Write(" --set atkcritrange 17");
-                    fileWriter.Write(" --set dmgcritmulti 3");
-                    break;
-                case "18-20/x3":
-                    fileWriter.Write(" --set atkcritrange 18");
-                    fileWriter.Write(" --set dmgcritmulti 3");
-                    break;
-                case "19-20/x3":
-                    fileWriter.Write(" --set atkcritrange 19");
-                    fileWriter.Write(" --set dmgcritmulti 3");
-                    break;
-
-                case "15-20/x4":
-                    fileWriter.Write(" --set atkcritrange 15");
-                    fileWriter.Write(" --set dmgcritmulti 4");
-                    break;
-                case "17-20/x4":
-                    fileWriter.Write(" --set atkcritrange 17");
-                    fileWriter.Write(" --set dmgcritmulti 4");
-                    break;
-                case "18-20/x4":
-                    fileWriter.Write(" --set atkcritrange 18");
-                    fileWriter.Write(" --set dmgcritmulti 4");
-                    break;
-                case "19-20/x4":
-                    fileWriter.Write(" --set atkcritrange 19");
-                    fileWriter.Write(" --set dmgcritmulti 4");
-                    break;
-
-                case "15-20/x5":
-                    fileWriter.Write(" --set atkcritrange 15");
-                    fileWriter.Write(" --set dmgcritmulti 5");
-                    break;
-                case "17-20/x5":
-                    fileWriter.Write(" --set atkcritrange 17");
-                    fileWriter.Write(" --set dmgcritmulti 5");
-                    break;
-                case "18-20/x5":
-                    fileWriter.Write(" --set atkcritrange 18");
-                    fileWriter.Write(" --set dmgcritmulti 5");
-                    break;
-                case "19-20/x5":
-                    fileWriter.Write(" --set atkcritrange 19");
-                    fileWriter.Write(" --set dmgcritmulti 5");
-                    break;
-            }
+            return $" ({damage}{(string.IsNullOrEmpty(crit) ? "" : "/")}{crit}{(string.IsNullOrEmpty(plus) ? "" : $" {plus}")})";
+            
         }
 
-        private static void WriteNpcStatistics(StreamWriter fileWriter, HeroLabCharacter character)
+        private static string WriteNpcCrit(string meleeCrit)
+        {
+            if (string.IsNullOrEmpty(meleeCrit))
+            {
+                return " --set atkcritrange 20 --set dmgcritmulti 2";
+            }
+            if (meleeCrit.Contains("/"))
+            {
+                var split = meleeCrit.Split('/');
+                var range = split[0].Substring(0, 2);
+                var multiplier = split[1].Substring(1, 1);
+                return $" --set atkcritrange {range} --set dmgcritmulti {multiplier}";
+            }
+            if (meleeCrit.Contains("-"))
+            {
+                return $" --set atkcritrange {meleeCrit.Substring(0, 2)} --set dmgcritmulti 2";
+            }
+            return $" --set atkcritrange 20 --set dmgcritmulti {meleeCrit.Substring(1, 1)}";
+        }
+
+        private static void WriteNpcStatistics(StringBuilder stringBuilder, HeroLabCharacter character)
         {
             foreach (var attribute in character.Attributes.Items)
             {
-                fileWriter.Write($" --set {attribute.Name.ToLower()} {attribute.Value.Modified}");
+                stringBuilder.Append($" --set {attribute.Name.ToLower()} {attribute.Value.Modified}");
             }
 
-            fileWriter.Write($" --set bab {character.Attack.BaseAttack}");
-            fileWriter.Write($" --set cmb_mod {character.Maneuvers.CombatManeuverBonus}");
-            fileWriter.Write($" --set cmd_mod {character.Maneuvers.CombatManeuverDefense}");
+            stringBuilder.Append($" --set bab {character.Attack.BaseAttack}");
+            stringBuilder.Append($" --set cmb_mod {GetValue(character.Maneuvers.CombatManeuverBonus)}");
+            stringBuilder.Append($" --set cmd_mod {character.Maneuvers.CombatManeuverDefense}");
             var cmbText = "";
             var cmdText = "";
             var immuneCmds = new List<string>();
@@ -449,54 +569,54 @@ namespace ID.HeroLabRoll20Output
                 cmdText += $"; Immune: {CommaDelimitedList(immuneCmds)}";
             }
             if (!string.IsNullOrEmpty(cmbText))
-                fileWriter.Write($" --set cmb_notes {cmbText}");
-            fileWriter.Write($" --set cmd_notes {cmdText}");
+                stringBuilder.Append($" --set cmb_notes {cmbText}");
+            stringBuilder.Append($" --set cmd_notes {cmdText}");
 
             //Skills
             foreach (var skill in character.Skills.Items)
             {
                 var skillName = skill.Name.ToLower().Replace(' ', '_').Replace("(", "").Replace(")", "");
-                fileWriter.Write($" --set {skillName} {skill.Value}");
+                stringBuilder.Append($" --set {skillName} {skill.Value}");
                 if (!string.IsNullOrEmpty(skill.SituationalModifiers?.Text))
                 {
-                    fileWriter.Write($" --set {skillName}_notes {skill.SituationalModifiers.Text}");
+                    stringBuilder.Append($" --set {skillName}_notes {skill.SituationalModifiers.Text}");
                 }
             }
             if (character.Languages?.Items?.Any() == true)
-                fileWriter.Write($" --set languages {CommaDelimitedList(character.Languages.Items.Select(l => l.Name))}");
+                stringBuilder.Append($" --set languages {CommaDelimitedList(character.Languages.Items.Select(l => l.Name))}");
             if (character.OtherSpecials?.Items?.Any() == true)
-                fileWriter.Write($" --set sq {CommaDelimitedList(character.OtherSpecials.Items.Select(l => l.ShortName))}");
+                stringBuilder.Append($" --set sq {CommaDelimitedList(character.OtherSpecials.Items.Select(l => l.ShortName))}");
 
             var allItems = character.MagicItems.Items
                 .Select(mi => $"{mi.Name}*{(GetValue(mi.Quantity) > 1 ? $" x{mi.Quantity}" : "")}").Union(
                     character.Gear.Items.Select(g => $"{g.Name}{(GetValue(g.Quantity) > 1 ? $" x{g.Quantity}" : "")}"));
-            fileWriter.Write($" --set combat_gear {CommaDelimitedList(allItems)}");
+            stringBuilder.Append($" --set combat_gear {CommaDelimitedList(allItems)}");
             //Not supported by HeroLab.
-            fileWriter.Write(" --set ecology_flag 0");
+            stringBuilder.Append(" --set ecology_flag 0");
             //Special Abilities
-            fileWriter.Write(character.OtherSpecials?.Items?.Any() == true
+            stringBuilder.Append(character.OtherSpecials?.Items?.Any() == true
                 ? " --set special_abilities_flag 1"
                 : " --set special_abilities_flag 0");
         }
 
-        private static void WriteNpcOffense(StreamWriter fileWriter, HeroLabCharacter character)
+        private static void WriteNpcOffense(StringBuilder stringBuilder, HeroLabCharacter character)
         {
-            fileWriter.Write($" --set npc_speed {character.Movement.BaseSpeed.Value}");
-            fileWriter.Write($" --set space {character.Size.Space.Value}");
-            fileWriter.Write($" --set reach {character.Size.Reach.Value}");
-            fileWriter.Write($" --set meleeattacks_flag {(character.Melee?.Items?.Any() == true ? 1 : 0)}");
-            fileWriter.Write($" --set rangedattacks_flag {(character.Ranged?.Items?.Any() == true ? 1 : 0)}");
-            fileWriter.Write($" --set specialattacks_flag {(character.OtherSpecials?.Items?.Any() == true ? 1 : 0)}");
-            fileWriter.Write(character.SpellLikeAbilities?.Items?.Any() == true
+            stringBuilder.Append($" --set npc_speed {character.Movement.BaseSpeed.Value}");
+            stringBuilder.Append($" --set space {character.Size.Space.Value}");
+            stringBuilder.Append($" --set reach {character.Size.Reach.Value}");
+            stringBuilder.Append($" --set meleeattacks_flag {(character.Melee?.Items?.Any() == true ? 1 : 0)}");
+            stringBuilder.Append($" --set rangedattacks_flag {(character.Ranged?.Items?.Any() == true ? 1 : 0)}");
+            stringBuilder.Append($" --set specialattacks_flag {(character.OtherSpecials?.Items?.Any() == true ? 1 : 0)}");
+            stringBuilder.Append(character.SpellLikeAbilities?.Items?.Any() == true
                 ? " --set spellabilities_flag 1"
                 : " --set spellabilities_flag 0");
             if (character.SpellClasses?.Items?.Any(sc => int.Parse(sc.MaxSpellLevel) > 0) == true)
             {
-                fileWriter.Write(" --set spells_flag 1");
+                stringBuilder.Append(" --set spells_flag 1");
                 var casterLevel = character.Classes.Classes.Max(c => GetValue(c.CasterLevel));
                 var concentration = character.Classes.Classes.Max(c => GetValue(c.ConcentrationCheck));
-                fileWriter.Write($" --set caster1_level {casterLevel}");
-                fileWriter.Write($" --set caster1_concentration {concentration}");
+                stringBuilder.Append($" --set caster1_level {casterLevel}");
+                stringBuilder.Append($" --set caster1_concentration {concentration}");
                 var spellsPerDay = new Dictionary<int, int>();
                 for (int spellLevel = 1; spellLevel <= 9; spellLevel++)
                 {
@@ -512,36 +632,37 @@ namespace ID.HeroLabRoll20Output
                 }
                 foreach (var spellLevel in spellsPerDay.Where(d => d.Value > 0))
                 {
-                    fileWriter.Write($" --set caster1_spells_perday_level_{spellLevel.Key} {spellLevel.Value}");
+                    stringBuilder.Append($" --set caster1_spells_perday_level_{spellLevel.Key} {spellLevel.Value}");
                 }
             }
             else
             {
-                fileWriter.Write(" --set spells_flag 0");
+                stringBuilder.Append(" --set spells_flag 0");
             }
         }
 
-        private static void WriteNpcDefense(StreamWriter fileWriter, HeroLabCharacter character)
+        private static void WriteNpcDefense(StringBuilder stringBuilder, HeroLabCharacter character)
         {
-            fileWriter.Write($" --set ac {character.ArmorClass.TotalArmorClass}");
-            fileWriter.Write($" --set ac_flatfooted {character.ArmorClass.FlatFootedArmorClass}");
-            fileWriter.Write($" --set ac_touch {character.ArmorClass.TouchArmorClass}");
-            fileWriter.Write($" --set acnotes {WriteNpcArmorClassNotes(character.ArmorClass)}");
-            fileWriter.Write($" --set hp {character.Health.CurrentHp}");
-            fileWriter.Write($" --set hp_max {character.Health.HitPoints}");
-            fileWriter.Write($" --set hd_roll {character.Health.HitDice}");
+            stringBuilder.Append($" --set ac {character.ArmorClass.TotalArmorClass}");
+            stringBuilder.Append($" --set ac_flatfooted {character.ArmorClass.FlatFootedArmorClass}");
+            stringBuilder.Append($" --set ac_touch {character.ArmorClass.TouchArmorClass}");
+            stringBuilder.Append($" --set ac_notes {WriteNpcArmorClassNotes(character.ArmorClass)}");
+            stringBuilder.Append($" --set hp {character.Health.CurrentHp}");
+            stringBuilder.Append($" --set hp!max {character.Health.HitPoints}");
+            stringBuilder.Append($" --set hp_max {character.Health.HitPoints}");
+            stringBuilder.Append($" --set hd_roll {character.Health.HitDice}");
             var hd = character.Health.HitDice.Split('d')[0];
             if (character.Health.HitDice.Contains("HD"))
             {
                 hd = character.Health.HitDice.Split(' ')[0];
             }
-            fileWriter.Write($" --set hd {hd}");
+            stringBuilder.Append($" --set hd {hd}");
             var fort = character.Saves.Items.First(i => i.Name == "Fortitude Save");
             var will = character.Saves.Items.First(i => i.Name == "Will Save");
             var reflex = character.Saves.Items.First(i => i.Name == "Reflex Save");
-            fileWriter.Write($" --set fortitude {fort.Value}");
-            fileWriter.Write($" --set will {will.Value}");
-            fileWriter.Write($" --set reflex {reflex.Value}");
+            stringBuilder.Append($" --set fortitude {GetValue(fort.Value)}");
+            stringBuilder.Append($" --set will {GetValue(will.Value)}");
+            stringBuilder.Append($" --set reflex {GetValue(reflex.Value)}");
             var saveMods = "";
             if (!string.IsNullOrEmpty(fort.SituationalModifiers.Text))
                 saveMods += fort.SituationalModifiers.Text;
@@ -556,24 +677,24 @@ namespace ID.HeroLabRoll20Output
                 saveMods += reflex.SituationalModifiers.Text;
             }
             if (!string.IsNullOrEmpty(saveMods))
-                fileWriter.Write($" --set saves_modifiers {saveMods}");
+                stringBuilder.Append($" --set saves_modifiers {saveMods}");
             if (character.Resistances?.Items?.Any(r => r.Name.Contains("Spell Resistance")) == true)
             {
                 var sr = character.Resistances.Items.First(r => r.Name.Contains("Spell Resistance")).ShortName.Split(' ')[1];
-                fileWriter.Write($" --set sr {sr}");
+                stringBuilder.Append($" --set sr {sr}");
             }
-            WriteNpcAbilities(fileWriter, "defensive_abilities", character.Defensive.Items);
-            WriteNpcAbilities(fileWriter, "resist", character.Resistances.Items);
-            WriteNpcAbilities(fileWriter, "immune", character.Immunities.Items);
-            WriteNpcAbilities(fileWriter, "weaknesses", character.Weaknesses.Items);
+            WriteNpcAbilities(stringBuilder, "defensive_abilities", character.Defensive.Items);
+            WriteNpcAbilities(stringBuilder, "resist", character.Resistances.Items);
+            WriteNpcAbilities(stringBuilder, "immune", character.Immunities.Items);
+            WriteNpcAbilities(stringBuilder, "weaknesses", character.Weaknesses.Items);
         }
 
-        private static void WriteNpcMain(StreamWriter fileWriter, HeroLabCharacter character)
+        private static void WriteNpcMain(StringBuilder stringBuilder, HeroLabCharacter character)
         {
-            fileWriter.Write($" --set npc_cr {character.ChallengeRating.Value}");
-            fileWriter.Write($" --set attr_xp {character.XpAward.Value}");
-            fileWriter.Write($" --set npc_alignment {GetAlignment(character.Alignment.Name)}");
-            fileWriter.Write($" --set size {character.Size.Name.ToLower()}");
+            stringBuilder.Append($" --set npc_cr {character.ChallengeRating.Value}");
+            stringBuilder.Append($" --set xp {character.XpAward.Value}");
+            stringBuilder.Append($" --set npc_alignment {GetAlignment(character.Alignment.Name)}");
+            stringBuilder.Append($" --set size {character.Size.Name.ToLower()}");
             string raceType = string.Empty;
             if (character.RaceTypes?.Items?.Any() == true)
                 raceType += character.RaceTypes.Items.First().Name;
@@ -587,14 +708,14 @@ namespace ID.HeroLabRoll20Output
                 }
                 raceType += subTypes + ")";
             }
-            fileWriter.Write($" --set npc_type {raceType}");
+            stringBuilder.Append($" --set npc_type {raceType}");
             if (int.Parse(character.Classes?.Level ?? "0") > 0)
             {
-                fileWriter.Write($" --set class {character.Classes.Summary}");
+                stringBuilder.Append($" --set class {character.Classes.Summary}");
             }
-            fileWriter.Write($" --set initiative {character.Initiative.Total}");
+            stringBuilder.Append($" --set initiative {GetValue(character.Initiative.Total)}");
             if (!string.IsNullOrEmpty(character.Initiative.SituationalModifiers.Text))
-                fileWriter.Write($" --set initiative_notes {character.Initiative.SituationalModifiers.Text}");
+                stringBuilder.Append($" --set initiative_notes {character.Initiative.SituationalModifiers.Text}");
             if (character.Senses?.Items?.Any() == true)
             {
                 var senses = "";
@@ -604,12 +725,12 @@ namespace ID.HeroLabRoll20Output
                         senses += ", ";
                     senses += sense.ShortName;
                 }
-                fileWriter.Write($" --senses {senses}");
+                stringBuilder.Append($" --set senses {senses}");
             }
         }
 
 
-        private static void WriteNpcAbilities(StreamWriter fileWriter, string type, HeroLabSpecial[] specials)
+        private static void WriteNpcAbilities(StringBuilder stringBuilder, string type, HeroLabSpecial[] specials)
         {
             var list = "";
             if (specials != null)
@@ -619,7 +740,7 @@ namespace ID.HeroLabRoll20Output
                     list += l.ShortName;
                 }
             if (!string.IsNullOrEmpty(list))
-                fileWriter.Write($" --set {type} {list}");
+                stringBuilder.Append($" --set {type} {list}");
         }
 
         private static string WriteNpcArmorClassNotes(ArmorClass armorClass)
