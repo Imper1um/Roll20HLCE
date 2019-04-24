@@ -39,6 +39,7 @@
       <HintPath>..\packages\CsvHelper.12.1.2\lib\net45\CsvHelper.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
@@ -68,6 +69,7 @@
     <Compile Include="HeroLab\Character\Spells.cs" />
     <Compile Include="HeroLab\Character\TrackedResources.cs" />
     <Compile Include="HeroLab\Character\Weapons.cs" />
+    <Compile Include="LogLevel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="HeroLab\Base\HeroLabDocument.cs" />
     <Compile Include="HeroLab\Base\HeroLabLocalization.cs" />

@@ -178,7 +178,7 @@ namespace ID.HeroLabRoll20Output
             stringBuilder.Append($" --set atkname {special.ShortName}");
             stringBuilder.Append($" --set atkdisplay {special.ShortName}");
             stringBuilder.Append($" --set options-flag 0");
-            var trackedResource = character.TrackedResources.Items.FirstOrDefault(tr => tr.Name == special.Name);
+            var trackedResource = character.TrackedResources?.Items?.FirstOrDefault(tr => tr.Name == special.Name);
             if (trackedResource != null)
             {
                 stringBuilder.Append($" --set perday 0");
@@ -587,10 +587,13 @@ namespace ID.HeroLabRoll20Output
             if (character.OtherSpecials?.Items?.Any() == true)
                 stringBuilder.Append($" --set sq {CommaDelimitedList(character.OtherSpecials.Items.Select(l => l.ShortName))}");
 
-            var allItems = character.MagicItems.Items
-                .Select(mi => $"{mi.Name}*{(GetValue(mi.Quantity) > 1 ? $" x{mi.Quantity}" : "")}").Union(
-                    character.Gear.Items.Select(g => $"{g.Name}{(GetValue(g.Quantity) > 1 ? $" x{g.Quantity}" : "")}"));
-            stringBuilder.Append($" --set combat_gear {CommaDelimitedList(allItems)}");
+            if (character.MagicItems?.Items != null)
+            { 
+                var allItems = character.MagicItems.Items
+                    .Select(mi => $"{mi.Name}*{(GetValue(mi.Quantity) > 1 ? $" x{mi.Quantity}" : "")}").Union(
+                        character.Gear.Items.Select(g => $"{g.Name}{(GetValue(g.Quantity) > 1 ? $" x{g.Quantity}" : "")}"));
+                stringBuilder.Append($" --set combat_gear {CommaDelimitedList(allItems)}");
+            }
             //Not supported by HeroLab.
             stringBuilder.Append(" --set ecology_flag 0");
             //Special Abilities
@@ -695,6 +698,7 @@ namespace ID.HeroLabRoll20Output
             stringBuilder.Append($" --set xp {character.XpAward.Value}");
             stringBuilder.Append($" --set npc_alignment {GetAlignment(character.Alignment.Name)}");
             stringBuilder.Append($" --set size {character.Size.Name.ToLower()}");
+            stringBuilder.Append($" --set size_display {character.Size.Name}");
             string raceType = string.Empty;
             if (character.RaceTypes?.Items?.Any() == true)
                 raceType += character.RaceTypes.Items.First().Name;

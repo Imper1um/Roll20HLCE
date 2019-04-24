@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -10,8 +11,19 @@ namespace ID.HeroLabRoll20Output
 {
     public partial class Program
     {
+        private static StreamWriter _log;
+        private static LogLevel? _logLevel = null;
+
         public static void Main(params string[] parameters)
         {
+            if (!Directory.Exists("C:\\PathfinderExporter"))
+            {
+                Directory.CreateDirectory("C:\\PathfinderExporter");
+            }
+            using (var fileStream = File.OpenWrite($"C:\\PathfinderExporter\\Log{DateTime.Now:yyyyMMdd_hhmmss}.log"))
+                using (_log = new StreamWriter(fileStream) { AutoFlush = true })
+            {
+                Log(LogLevel.Info, "Starting up...");
 #if DEBUG
             var xml = "";
             using (var fileStream = File.OpenRead(@"C:\PathfinderExporter\Import.xml"))
@@ -20,30 +32,84 @@ namespace ID.HeroLabRoll20Output
                 xml = streamReader.ReadToEnd();
             }
 #else
-            if (parameters == null || parameters.Length == 0) return;
-            var xml = parameters[0];
-#endif
+                if (parameters == null || parameters.Length == 0) return;
+                var xml = parameters[0];
 
-            using (var memoryStream = new MemoryStream())
-            using (var streamWriter = new StreamWriter(memoryStream))
-            {
-                streamWriter.Write(xml);
-                streamWriter.Flush();
-                memoryStream.Position = 0;
-                using (var streamReader = new StreamReader(memoryStream))
-                using (var xmlReader = XmlReader.Create(streamReader))
+                Log(LogLevel.Debug, "Parameters:");
+                foreach (var parameter in parameters)
+                    Log(LogLevel.Debug, $" - '{parameter}'");
+                if (File.Exists(xml))
                 {
-                    var xmlSerializer = new XmlSerializer(typeof(HeroLabDocument));
-                    var document = xmlSerializer.Deserialize(xmlReader) as HeroLabDocument;
-                    if (document == null) return;
-                    if (!Directory.Exists("C:\\PathfinderExporter"))
+                    using (var inputStream = File.OpenRead(xml))
+                    using (var streamReader = new StreamReader(inputStream))
                     {
-                        Directory.CreateDirectory("C:\\PathfinderExporter");
+                        xml = streamReader.ReadToEnd();
                     }
-                    foreach (var character in document.Public.Characters) ProcessNpcCharacter(character);
+                }
+#endif
+                Log(LogLevel.Trace, "XML INPUT:");
+                Log(LogLevel.Trace, xml);
+
+                using (var memoryStream = new MemoryStream())
+                using (var streamWriter = new StreamWriter(memoryStream))
+                {
+                    streamWriter.Write(xml);
+                    streamWriter.Flush();
+                    memoryStream.Position = 0;
+                    using (var streamReader = new StreamReader(memoryStream))
+                    using (var xmlReader = XmlReader.Create(streamReader))
+                    {
+                        var xmlSerializer = new XmlSerializer(typeof(HeroLabDocument));
+                        var document = xmlSerializer.Deserialize(xmlReader) as HeroLabDocument;
+                        if (document == null) return;
+                        Log(LogLevel.Info, $"{document.Public.Characters.Length} characters detected.");
+                        foreach (var character in document.Public.Characters)
+                        {
+                            Log(LogLevel.Info, $"Processing {character.Name}");
+                            try
+                            {
+                                ProcessNpcCharacter(character);
+                            } catch (Exception ex)
+                            {
+                                Log(LogLevel.Warning, "Unable to process character. Exception occurred");
+                                Log(LogLevel.Warning, ex);
+                            }
+                        }
+                    }
+                    Log(LogLevel.Info, "Completed successfully.");
                 }
             }
         }
+
+        private static LogLevel GetLogLevel()
+        {
+            if (_logLevel != null) return _logLevel.Value;
+            var logLevel = LogLevel.Info;
+            var logLevelText = ConfigurationManager.AppSettings["LogLevel"];
+            if (!string.IsNullOrEmpty(logLevelText))
+            {
+                if (int.TryParse(logLevelText, out var logLevelInt))
+                    logLevel = (LogLevel)logLevelInt;
+                else if (Enum.TryParse<LogLevel>(logLevelText, out var logLevelEnum))
+                    logLevel = logLevelEnum;
+            }
+            _logLevel = logLevel;
+            return logLevel;
+        }
+
+        private static void Log(LogLevel logLevel, string content)
+        {
+            if (_log != null && logLevel >= GetLogLevel())
+            {
+                _log.WriteLine($"[{DateTime.Now:yyyy/MM/dd hh:mm:ss}] [{logLevel}] {content}");
+            }
+        }
+
+        private static void Log(LogLevel logLevel, Exception ex)
+        {
+            Log(logLevel, $"Exception {UnwindException(ex)}");
+        }
+
 
         private static string OneLineString(string description)
         {
